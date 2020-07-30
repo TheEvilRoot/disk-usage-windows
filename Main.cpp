@@ -143,10 +143,12 @@ uint64_t handleDirectory(const Options& opts, const std::string& path, const std
 			fileSize = data.nFileSizeLow | (data.nFileSizeHigh << (sizeof(DWORD) * 8));
 		}
 		size += fileSize;
-		auto fz = getFileSize(opts, fileSize);
 
 		if (!opts.silent)
+		{
+			auto fz = getFileSize(opts, fileSize);
 			Log::fileSize(fz.value) << fz.suffix << " " << relativeFileName << "\n";
+		}
 	} 
 	while (FindNextFileA(find, &data));
 
@@ -162,12 +164,13 @@ int main(int argc, const char* argv[])
 	if (opts.workPaths.empty())
 	{
 		if (!opts.silent)
-		Log::error() << "No work paths were specified.\n";
+		{
+			Log::error() << "No work paths were specified.\n";
+		}
 		return 1;
 	}
-	else
+	else if (!opts.silent)
 	{
-		if (!opts.silent)
 		Log::info() << "Working with " << opts.workPaths.size() << " work paths\n";
 	}
 
@@ -183,7 +186,10 @@ int main(int argc, const char* argv[])
 	}
 
 	if (!opts.silent)
-	Log::info() << "Summary: \n";
+	{
+		Log::info() << "Summary: \n";
+	}
+
 	for (const auto& entry : summary)
 	{
 		Log::fileSize(entry.second.value) 
