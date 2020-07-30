@@ -112,8 +112,28 @@ FileSize getFileSize(const Options& opts, uint64_t iValue)
 	return { value, opts.suffixes.back() };
 }
 
-uint64_t handleDirectory(const Options& opts, const std::string& path, const std::string &relativePath = "./")
+uint64_t handlePath(const Options& opts, const std::string& path, const std::string &relativePath = "./")
 {
+	WIN32_FIND_DATAA selfData;
+	auto selfFind = FindFirstFileA(path.c_str(), &selfData);
+
+	if (selfFind == INVALID_HANDLE_VALUE)
+	{
+		if (!opts.silent)
+		{
+			Log::error() << "Path " << path << " cannot be found\n";
+		}
+		return 0;
+	}
+
+	if (!(selfData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+	{
+		return selfData.nFileSizeLow | (selfData.nFileSizeHigh << (sizeof(DWORD) * 8));
+	}
+
+	FindClose(selfFind);
+
+
 	WIN32_FIND_DATAA data;
 	auto find = FindFirstFileA(getWildcard(path).c_str(), &data);
 
@@ -136,7 +156,7 @@ uint64_t handleDirectory(const Options& opts, const std::string& path, const std
 		uint64_t fileSize = 0;
 		if (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 		{
-			fileSize = handleDirectory(opts, joinPaths(path, fileName), relativeFileName);
+			fileSize = handlePath(opts, joinPaths(path, fileName), relativeFileName);
 		}
 		else
 		{
@@ -178,7 +198,7 @@ int main(int argc, const char* argv[])
 
 	for (const auto& path : opts.workPaths)
 	{
-		auto fz = getFileSize(opts, handleDirectory(opts, path));
+		auto fz = getFileSize(opts, handlePath(opts, path));
 		summary.emplace_back(path, fz);
 
 		if (!opts.silent)
